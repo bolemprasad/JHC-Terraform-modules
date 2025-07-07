@@ -1,0 +1,43 @@
+name: Auto Create PR if Branch Matches Pattern
+
+on:
+  push:
+    branches:
+      - '**'  # Trigger on all branches
+
+jobs:
+  create-pr-if-valid-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract branch name
+        id: extract_branch
+        run: |
+          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+
+      - name: Check and create PR if valid
+        env:
+          BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        run: |
+          echo "🔍 Checking branch name: $BRANCH_NAME"
+          if [[ "$BRANCH_NAME" =~ ^jhc-batch-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "✅ Branch name matches. Creating PR..."
+
+            # Install GitHub CLI
+            sudo apt-get install -y gh
+
+            # Authenticate using GitHub Token
+            echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+            # Create PR using GitHub CLI
+            gh pr create \
+              --base main \
+              --head "$BRANCH_NAME" \
+              --title "Auto PR from $BRANCH_NAME" \
+              --body "This PR was automatically created for batch $BRANCH_NAME."
+          else
+            echo "❌ Branch '$BRANCH_NAME' does NOT match 'jhc-batch-XX-YY'. PR not created."
+          fi
