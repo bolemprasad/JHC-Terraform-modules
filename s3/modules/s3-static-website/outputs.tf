@@ -1,4 +1,4 @@
-output "bucket_arn" {
-    value = aws_s3_bucket.static.arn
-  
+output "bucket_name" {
+  description = "Name of the S3 bucket"
+  value       = var.bucket_name
 }
